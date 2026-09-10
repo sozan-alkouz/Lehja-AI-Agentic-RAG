@@ -22,6 +22,12 @@ The platform includes:
 
 Both Learning Mode and Interactive Question Mode use the shared RAG pipeline to retrieve relevant Levantine Arabic content from the knowledge base.
 
+## Live Platform
+
+The learning platform is available at:
+
+https://lehja.169.58.245.203.sslip.io/
+
 ## Research
 
 This repository accompanies the research paper:
@@ -59,7 +65,7 @@ The workflow includes:
 - Language-model generation
 - Experimental output storage
 
-Because the experimental workflow was iteratively modified during the study, a separate archived n8n file was not saved for every individual experimental run. The paper reports the exact configuration used for each experiment.
+Because the experimental workflow was iteratively modified during the study, a separate archived n8n file was not saved for every individual experimental run. The paper reports the configuration used for each experiment.
 
 ### `without_rag_workflow_public.json`
 
@@ -91,13 +97,49 @@ The script:
 - Uses `deep-translator` with Google Translate
 - Saves progress automatically to `done_translated.xlsx`
 
-### Installation
+## Evaluation Scripts
+
+The repository also includes Python scripts used for automatic evaluation.
+
+### `bleu_evaluation.py`
+
+Calculates BLEU scores for the fixed RAG vs. Without-RAG evaluation set using the same text preprocessing and BLEU-4 configuration for both systems.
+
+The script:
+- Uses the same reference answers for both systems
+- Evaluates the full 180-item test set
+- Keeps no-output responses in the evaluation with a score of zero
+- Calculates corpus BLEU and mean sentence-level BLEU
+- Saves detailed per-item results
+
+### `token_f1_evaluation.py`
+
+Calculates token-level Precision, Recall, and F1 between generated responses and reference answers.
+
+The script:
+- Performs token-level overlap comparison
+- Calculates Precision, Recall, and F1 for each response
+- Uses multiset token overlap
+- Retains explicit no-output responses with a score of zero
+- Reports macro-averaged Token Precision, Recall, and F1
+- Saves item-level evaluation results
+
+## Installation
+
+Install the required Python packages using:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Running the Script
+The required packages include:
+- pandas
+- numpy
+- openpyxl
+- deep-translator
+- nltk
+
+## Running the Translation Script
 
 Place the dataset file in the same folder as the script and name it:
 
@@ -118,6 +160,8 @@ Lehja-AI-Agentic-RAG/
 ├── README.md
 ├── requirements.txt
 ├── translate_missing_english.py
+├── bleu_evaluation.py
+├── token_f1_evaluation.py
 ├── platform_workflow_public.json
 ├── model_comparison_rag_workflow_public.json
 └── without_rag_workflow_public.json
@@ -126,5 +170,7 @@ Lehja-AI-Agentic-RAG/
 ## Reproducibility
 
 The public files are provided to document the main implementation and experimental workflows described in the research paper.
+
+Private credentials and service-specific identifiers are not included in the public repository.
 
 External datasets and experimental result files are provided separately through the supplementary materials link.
