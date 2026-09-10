@@ -27,3 +27,34 @@ This repository accompanies the research paper:
 **Designing an Agentic AI System for Teaching the Levantine Arabic Dialect to Non-Native Speakers**
 
 University of Jordan.
+
+## Python Translation Script
+
+The repository includes `translate_missing_english.py`, which was used during dataset preparation to fill missing English translations.
+
+The script:
+- Reads the Excel dataset.
+- Checks the `English` column.
+- Translates only rows with missing English values.
+- Uses `deep-translator` with Google Translate.
+- Saves progress automatically to `done_translated.xlsx`.
+
+### Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+### Running the script
+
+Place the dataset file in the same folder as the script and name it:
+
+```text
+done.xlsx
+```
+
+Then run:
+
+```bash
+python translate_missing_english.py
+```
