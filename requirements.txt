@@ -1,3 +1,5 @@
 pandas
-deep-translator
+numpy
 openpyxl
+deep-translator
+nltk
