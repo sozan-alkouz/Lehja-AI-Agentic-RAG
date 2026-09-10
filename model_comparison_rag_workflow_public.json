@@ -1,0 +1,873 @@
+{
+  "name": "Rag testing",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {}
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DRIVE_DATASET_FOLDER_ID",
+          "mode": "list",
+          "cachedResultName": "Dataset "
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        -208
+      ],
+      "id": "76b5d226-8cdf-4cb0-b805-07a3b86867ab",
+      "name": "Get Dataset"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -704,
+        -208
+      ],
+      "id": "e98b802e-614b-4b4b-9151-ac41fc357c5c",
+      "name": "Download file"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "chromaCollection": {
+          "__rl": true,
+          "value": "=levantine_finalversionlast",
+          "mode": "id"
+        },
+        "embeddingBatchSize": 50,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreChromaDB",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        -304
+      ],
+      "id": "b23e5c0b-37fd-4d8b-86a3-2b65b73a9884",
+      "name": "Chroma Vector Store"
+    },
+    {
+      "parameters": {
+        "model": "bge-m3:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -80
+      ],
+      "id": "f301a191-e728-43a6-9baf-ea43121919b2",
+      "name": "Embeddings Ollama"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "topic",
+                "value": "={{ $json.metadata.topic }}"
+              },
+              {
+                "name": "stage",
+                "value": "={{ $json.metadata.stage }}"
+              },
+              {
+                "name": "original_id",
+                "value": "={{ $json.metadata.original_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        400,
+        -32
+      ],
+      "id": "b40cc82c-6884-4031-885f-b9b6e95d639d",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -480,
+        -208
+      ],
+      "id": "1b4588d3-6a23-4f70-81a3-d85123de41ad",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\nconst output = [];\nconst seenIds = new Set();\n\n\n/* =========================================================\n   CONFIG\n========================================================= */\n\n/*\n  المستويات الموجودة حاليًا في الداتا.\n  إذا وسّعتِ النظام لاحقًا عدّلي الأرقام فقط.\n*/\nconst MIN_LEARNING_LEVEL = 1;\nconst MAX_LEARNING_LEVEL = 6;\n\nconst MIN_MICRO_LEVEL = 1;\nconst MAX_MICRO_LEVEL = 110;\n\n\n/*\n  المواضيع المعتمدة حاليًا.\n\n  الهدف من القائمة منع أخطاء مثل:\n  Health and Emergencies.\n  بدل:\n  Health and Emergencies\n*/\nconst ALLOWED_TOPICS = new Set([\n  \"Basics and Daily Language\",\n  \"Daily Life and Home\",\n  \"Family and Relationships\",\n  \"Feelings, Opinions and Social Life\",\n  \"Food and Restaurants\",\n  \"General Conversation\",\n  \"Greetings and Introductions\",\n  \"Health and Emergencies\",\n  \"Hobbies, Culture and Society\",\n  \"Numbers, Time and Dates\",\n  \"Personal Information\",\n  \"Shopping and Money\",\n  \"Slang and Common Expressions\",\n  \"Technology and Communication\",\n  \"Transportation and Directions\",\n  \"Travel and Accommodation\",\n  \"Work and Education\",\n]);\n\n\n/* =========================================================\n   HELPERS\n========================================================= */\n\nfunction toText(value, fallback = \"\") {\n  if (\n    value === null ||\n    value === undefined\n  ) {\n    return fallback;\n  }\n\n  const result = String(value).trim();\n\n  return result || fallback;\n}\n\n\n/*\n  حقل نصي مطلوب.\n*/\nfunction requiredText(\n  value,\n  fieldName,\n  rowNumber,\n  id = \"unknown\"\n) {\n  const text = toText(value);\n\n  if (!text) {\n    throw new Error(\n      `الصف ${rowNumber} - ID ${id}: الحقل \"${fieldName}\" فارغ.`\n    );\n  }\n\n  return text;\n}\n\n\n/*\n  رقم صحيح مطلوب.\n\n  ما منستخدم fallback إلى 1،\n  لأنه ممكن يخفي أخطاء في الداتا.\n*/\nfunction requiredInteger(\n  value,\n  fieldName,\n  rowNumber,\n  id\n) {\n  const text = toText(value);\n\n  if (!text) {\n    throw new Error(\n      `الصف ${rowNumber} - ID ${id}: الحقل \"${fieldName}\" فارغ.`\n    );\n  }\n\n  const number = Number(text);\n\n  if (\n    !Number.isFinite(number) ||\n    !Number.isInteger(number)\n  ) {\n    throw new Error(\n      `الصف ${rowNumber} - ID ${id}: \"${fieldName}\" يجب أن يكون رقمًا صحيحًا. القيمة الحالية: \"${text}\"`\n    );\n  }\n\n  return number;\n}\n\n\n/*\n  رقم اختياري.\n  Difficulty غير موجود في بعض الملفات،\n  لذلك إذا كان فارغًا يصبح 0.\n*/\nfunction optionalNumber(\n  value,\n  fieldName,\n  rowNumber,\n  id,\n  fallback = 0\n) {\n  const text = toText(value);\n\n  if (!text) {\n    return fallback;\n  }\n\n  const number = Number(text);\n\n  if (!Number.isFinite(number)) {\n    throw new Error(\n      `الصف ${rowNumber} - ID ${id}: \"${fieldName}\" ليس رقمًا صالحًا. القيمة الحالية: \"${text}\"`\n    );\n  }\n\n  return number;\n}\n\n\n/* =========================================================\n   PREPARE DOCUMENTS\n========================================================= */\n\nfor (\n  let index = 0;\n  index < rows.length;\n  index++\n) {\n  const item = rows[index];\n\n  const row = item.json ?? {};\n\n  /*\n    +2 لأن:\n    صف 1 = Header في CSV\n    index يبدأ من صفر\n  */\n  const rowNumber = index + 2;\n\n\n  /* =======================================================\n     ID\n  ======================================================= */\n\n  const id = requiredText(\n    row[\"ID\"] ??\n    row[\"Item_ID\"] ??\n    row[\"Item ID\"] ??\n    row[\"original_id\"],\n    \"ID\",\n    rowNumber\n  );\n\n\n  /*\n    مهم جدًا:\n    الـID لازم يكون أرقام فقط.\n\n    هذا يمنع المشكلة التي حصلت عندما دخل\n    RAG_Text كامل داخل خانة ID.\n  */\n  if (!/^\\d+$/.test(id)) {\n    throw new Error(\n      `الصف ${rowNumber}: ID غير صالح: \"${id}\". يجب أن يحتوي ID على أرقام فقط.`\n    );\n  }\n\n\n  /*\n    منع Duplicate IDs.\n  */\n  if (seenIds.has(id)) {\n    throw new Error(\n      `الصف ${rowNumber}: يوجد ID مكرر: ${id}`\n    );\n  }\n\n  seenIds.add(id);\n\n\n  /* =======================================================\n     LANGUAGE CONTENT\n  ======================================================= */\n\n  const msa = requiredText(\n    row[\"Modern Standard Arabic\"] ??\n    row[\"MSA\"] ??\n    row[\"msa\"],\n    \"Modern Standard Arabic\",\n    rowNumber,\n    id\n  );\n\n\n  const levantine = requiredText(\n    row[\"Levantine Arabic\"] ??\n    row[\"Levantine_Arabic\"] ??\n    row[\"levantine\"],\n    \"Levantine Arabic\",\n    rowNumber,\n    id\n  );\n\n\n  const english = requiredText(\n    row[\"English\"] ??\n    row[\"english\"],\n    \"English\",\n    rowNumber,\n    id\n  );\n\n\n  /* =======================================================\n     TOPIC\n  ======================================================= */\n\n  const topic = requiredText(\n    row[\"Topic\"] ??\n    row[\"topic\"],\n    \"Topic\",\n    rowNumber,\n    id\n  );\n\n\n  /*\n    يمنع Topic مكتوب غلط أو فيه نقطة زائدة.\n  */\n  if (!ALLOWED_TOPICS.has(topic)) {\n    throw new Error(\n      `الصف ${rowNumber} - ID ${id}: Topic غير معتمد: \"${topic}\"`\n    );\n  }\n\n\n  /* =======================================================\n     LEARNING LEVEL\n  ======================================================= */\n\n  const learningLevel = requiredInteger(\n    row[\"Learning_Level\"] ??\n    row[\"Learning Level\"] ??\n    row[\"Stage\"] ??\n    row[\"stage\"],\n    \"Learning_Level\",\n    rowNumber,\n    id\n  );\n\n\n  if (\n    learningLevel < MIN_LEARNING_LEVEL ||\n    learningLevel > MAX_LEARNING_LEVEL\n  ) {\n    throw new Error(\n      `الصف ${rowNumber} - ID ${id}: Learning_Level خارج النطاق. القيمة: ${learningLevel}. المطلوب ${MIN_LEARNING_LEVEL}-${MAX_LEARNING_LEVEL}.`\n    );\n  }\n\n\n  /* =======================================================\n     MICRO LEVEL\n  ======================================================= */\n\n  const microLevel = requiredInteger(\n    row[\"Micro_Level\"] ??\n    row[\"Micro Level\"] ??\n    row[\"micro_level\"] ??\n    row[\"microLevel\"],\n    \"Micro_Level\",\n    rowNumber,\n    id\n  );\n\n\n  if (\n    microLevel < MIN_MICRO_LEVEL ||\n    microLevel > MAX_MICRO_LEVEL\n  ) {\n    throw new Error(\n      `الصف ${rowNumber} - ID ${id}: Micro_Level خارج النطاق. القيمة: ${microLevel}. المطلوب ${MIN_MICRO_LEVEL}-${MAX_MICRO_LEVEL}.`\n    );\n  }\n\n\n  /* =======================================================\n     OPTIONAL FIELDS\n  ======================================================= */\n\n  const difficulty = optionalNumber(\n    row[\"Difficulty\"] ??\n    row[\"Difficulty_Score\"] ??\n    row[\"Difficulty Score\"] ??\n    row[\"difficulty\"],\n    \"Difficulty\",\n    rowNumber,\n    id,\n    0\n  );\n\n\n  const itemType = toText(\n    row[\"Item_Type\"] ??\n    row[\"Item Type\"] ??\n    row[\"item_type\"]\n  );\n\n\n  const qualityStatus = toText(\n    row[\"Quality_Status\"] ??\n    row[\"Quality Status\"] ??\n    row[\"quality_status\"]\n  );\n\n\n  /* =======================================================\n     EMBEDDING TEXT\n\n     IMPORTANT:\n     RAG_Text IS NOT USED.\n  ======================================================= */\n\n  const text = [\n    `الفصحى: ${msa}`,\n    `الشامية: ${levantine}`,\n    `الإنجليزية: ${english}`,\n    `الموضوع: ${topic}`,\n    `المستوى: ${learningLevel}`,\n    `المستوى الفرعي: ${microLevel}`,\n  ].join(\"\\n\");\n\n\n  /* =======================================================\n     CHROMA DOCUMENT\n  ======================================================= */\n\n  output.push({\n    json: {\n\n      /*\n        Document ID داخل Chroma.\n      */\n      id: `row-${id}`,\n\n\n      /*\n        هذا النص هو الذي سيتم عمل Embedding له.\n      */\n      text,\n\n\n      /*\n        Metadata التي سيستخدمها التطبيق\n        في الاسترجاع والفلاتر والإجابات.\n      */\n      metadata: {\n\n        /* IDs */\n        item_id: id,\n        original_id: id,\n        source_id: id,\n\n        /* Classification */\n        topic,\n\n        /* Main level */\n        learning_level: learningLevel,\n\n        /*\n          stage محفوظ لأن Workflow الحالي\n          يستخدمه في Chroma filters.\n        */\n        stage: learningLevel,\n\n        /* Micro level */\n        micro_level: microLevel,\n\n        /* Difficulty */\n        difficulty,\n\n        /* Language content */\n        msa,\n        levantine,\n        english,\n\n        /*\n          مش ضروريين للـflow الحالي،\n          لكن مفيدين نحفظهم في metadata.\n        */\n        item_type: itemType,\n        quality_status: qualityStatus,\n      },\n    },\n  });\n}\n\n\n/* =========================================================\n   FINAL VALIDATION\n========================================================= */\n\nif (output.length !== rows.length) {\n  throw new Error(\n    `عدد Documents الناتجة (${output.length}) لا يساوي عدد صفوف الداتا (${rows.length}).`\n  );\n}\n\n\n/* =========================================================\n   RETURN\n========================================================= */\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -288
+      ],
+      "id": "41a257e7-1e9a-47cf-955d-c8725051ebe5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "batchSize": 500,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -256,
+        -208
+      ],
+      "id": "3adbb0b2-b71d-48ff-b83d-d354aa8666f8",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "Model_Comparison_100_Fully_Synthetic_Unseen_Batches (1)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_SHEET_NAME_OR_ID",
+          "mode": "id",
+          "cachedResultName": "Synthetic_Unseen_100"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Batch_ID",
+              "lookupValue": "Batch_10"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -688,
+        672
+      ],
+      "id": "785d7b9c-4b6d-4ad9-869e-13fa243693f9",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "Model_Comparison_100_Fully_Synthetic_Unseen"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_SHEET_NAME_OR_ID",
+          "mode": "id",
+          "cachedResultName": "Evaluation"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Evaluation_ID": "={{ $('Loop Over Items1').item.json.Test_ID + '_Qwen3827B' }}",
+            "Model_Output": "={{ $('Question and Answer Chain').item.json.response }}"
+          },
+          "matchingColumns": [
+            "Evaluation_ID"
+          ],
+          "schema": [
+            {
+              "id": "Evaluation_ID",
+              "displayName": "Evaluation_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Test_ID",
+              "displayName": "Test_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Model",
+              "displayName": "Model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Prompt_Strategy",
+              "displayName": "Prompt_Strategy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Learning_Level",
+              "displayName": "Learning_Level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Item_Type",
+              "displayName": "Item_Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Question",
+              "displayName": "Question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "MSA_Input",
+              "displayName": "MSA_Input",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reference_Levantine",
+              "displayName": "Reference_Levantine",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Model_Output",
+              "displayName": "Model_Output",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Manual_Accuracy_0_1",
+              "displayName": "Manual_Accuracy_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Auto_Exact_Match_0_1",
+              "displayName": "Auto_Exact_Match_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Meaning_Correctness_1_5",
+              "displayName": "Meaning_Correctness_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Naturalness_1_5",
+              "displayName": "Naturalness_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Relevance_1_5",
+              "displayName": "Relevance_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Level_Appropriateness_1_5",
+              "displayName": "Level_Appropriateness_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Faithfulness_1_5",
+              "displayName": "Faithfulness_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Hallucination_0_1",
+              "displayName": "Hallucination_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "BLEU_0_1",
+              "displayName": "BLEU_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Token_F1_0_1",
+              "displayName": "Token_F1_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Error_Category",
+              "displayName": "Error_Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        544,
+        672
+      ],
+      "id": "eebc5a94-6339-4f21-a5a9-7c4378830e5c",
+      "name": "Append or update row in sheet"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1024,
+        704
+      ],
+      "id": "7eae003e-8f50-4575-b98b-249e7bdcc759",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "model": "bge-m3:latest"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOllama",
+      "typeVersion": 1,
+      "position": [
+        256,
+        1024
+      ],
+      "id": "4c25e65d-cf1e-4f33-bcb4-944c66efefdd",
+      "name": "Embeddings Ollama2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0e14c58-fffc-45c2-aa0b-4fb6037fd21c",
+              "name": "Prompt",
+              "value": "={{ $json.Prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "cd05da95-3798-41e2-903d-45b0c8c6f917",
+              "name": "Evaluation_ID",
+              "value": "={{ $json.Evaluation_ID }}",
+              "type": "string"
+            },
+            {
+              "id": "a4df291f-3905-4a5e-a1f5-dbbf9ef5c2aa",
+              "name": "Evaluation_Type",
+              "value": "={{ $json.Evaluation_Type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -368,
+        416
+      ],
+      "id": "34e2db03-9025-42e9-b089-002e550997a4",
+      "name": "Prepare Retrieval Query"
+    },
+    {
+      "parameters": {
+        "topK": 5
+      },
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "typeVersion": 1,
+      "position": [
+        96,
+        672
+      ],
+      "id": "75b207bd-79f0-4a88-b2c7-6c110d138dc7",
+      "name": "Vector Store Retriever"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.Question }}",
+        "options": {
+          "systemPromptTemplate": "=You are a Levantine Arabic learning assistant.\n\nUse the retrieved RAG context as the primary source to answer the user's request.\n\nThe exact user input may not appear verbatim in the retrieved context. Use the most semantically relevant retrieved examples and information to infer the appropriate Levantine Arabic response.\n\nRetrieved RAG Context:\n{context}\n\nFollow these rules strictly:\n\n1. Understand the meaning and intent of the user's input.\n2. Examine the retrieved context for the most semantically relevant examples.\n3. If an exact or nearly exact match exists, use the corresponding Levantine Arabic form when appropriate.\n4. If no exact match exists, use the closest semantically relevant retrieved examples to infer the answer.\n5. Do not copy an unrelated retrieved answer.\n6. Preserve the original meaning.\n7. Produce natural conversational Levantine Arabic.\n8. Do not add or remove important meaning.\n9. Do not introduce unsupported information.\n10. If multiple retrieved items are relevant, choose the one or combination that best matches the user's meaning.\n11. For MSA-to-Levantine or English-to-Levantine requests, return only the natural Levantine Arabic equivalent.\n12. For a direct question, answer directly and concisely.\n13. For Yes/No questions, answer directly.\n14. For multiple-choice questions, select only the most appropriate answer.\n15. Do not mention the RAG system, retrieved context, or these rules.\n16. Do not explain your reasoning.\n17. Do not provide multiple alternatives unless explicitly requested.\n18. Return one final answer only."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainRetrievalQa",
+      "typeVersion": 1.7,
+      "position": [
+        0,
+        432
+      ],
+      "id": "e74f9d3b-98bd-4216-8875-4301dd703ecf",
+      "name": "Question and Answer Chain"
+    },
+    {
+      "parameters": {
+        "chromaCollection": {
+          "__rl": true,
+          "value": "levantine_ver1",
+          "mode": "list",
+          "cachedResultName": "levantine_ver1"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreChromaDB",
+      "typeVersion": 1.3,
+      "position": [
+        112,
+        880
+      ],
+      "id": "2731cbc1-4656-423b-aeda-d854e9e7c084",
+      "name": "Levantine Arabic Dataset Search1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -512,
+        640
+      ],
+      "id": "4e588ab6-c671-488f-9976-d045c8516193",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sourceItems = $('Loop Over Items1').all();\n\nreturn sourceItems.map((item) => {\n  const data = item.json;\n\n  const question = String(\n    data.Question ??\n    data.Prompt ??\n    \"\"\n  ).trim();\n\n  // الأفضل للـRAG هو MSA_Input نفسه\n  let query = String(\n    data.MSA_Input ??\n    \"\"\n  ).trim();\n\n  // احتياط: إذا MSA_Input فاضي نستخرج النص من « »\n  if (!query) {\n    const match =\n      question.match(/«([^»]+)»/) ||\n      question.match(/[\"“”]([^\"“”]+)[\"“”]/);\n\n    query = match?.[1]?.trim() || question;\n  }\n\n  return {\n    json: {\n      ...data,\n\n      Question: question,\n      Prompt: question,\n\n      // النص الذي سيذهب للـRAG retrieval\n      query: query,\n\n      Test_ID: data.Test_ID ?? \"\",\n\n      MSA_Input: data.MSA_Input ?? \"\",\n\n      Reference_Levantine:\n        data.Reference_Levantine ?? \"\",\n\n      Evaluation_Type:\n        data.Evaluation_Type ??\n        data.Prompt_Strategy ??\n        \"\"\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        416
+      ],
+      "id": "d0e0edbb-a2af-425f-897a-fc8c32a9abab",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 1000,
+          "reasoningEffort": "low"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1712,
+        880
+      ],
+      "id": "2f769214-b959-4bbc-a7a8-8cdc8499f75f",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3.8-27b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -1504,
+        880
+      ],
+      "id": "b8d274ce-b7cf-4a2d-95d7-22206a736d43",
+      "name": "Groq Chat Model"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -144,
+        672
+      ],
+      "id": "8db71aad-f257-4f4e-824c-49c2f98f9d53",
+      "name": "Google Gemini Chat Model"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Dataset": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Chroma Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Chroma Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Chroma Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chroma Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Ollama2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Levantine Arabic Dataset Search1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Retrieval Query": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Retriever": {
+      "ai_retriever": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_retriever",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question and Answer Chain": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Levantine Arabic Dataset Search1": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Retriever",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Prepare Retrieval Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}
