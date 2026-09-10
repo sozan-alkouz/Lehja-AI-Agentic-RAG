@@ -1,0 +1,799 @@
+{
+  "name": "without Rag testing",
+  "nodes": [
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "Untitled spreadsheet"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_SHEET_NAME_OR_ID",
+          "mode": "id",
+          "cachedResultName": "Sheet1"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -720,
+        208
+      ],
+      "id": "13d522f8-d888-442a-9386-d21b617c0f9c",
+      "name": "Get row(s) in sheet"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_DOCUMENT_ID",
+          "mode": "list",
+          "cachedResultName": "فايل الشغل الكامل كله كله"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_SHEET_NAME_OR_ID",
+          "mode": "id",
+          "cachedResultName": "Results_Template"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Evaluation_ID": "={{ $('Get row(s) in sheet').item.json.Evaluation_ID }}",
+            "Without_RAG_Response": "={{ $json.text }}"
+          },
+          "matchingColumns": [
+            "Evaluation_ID"
+          ],
+          "schema": [
+            {
+              "id": "Evaluation_ID",
+              "displayName": "Evaluation_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Evaluation_Type",
+              "displayName": "Evaluation_Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Prompt_Language",
+              "displayName": "Prompt_Language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Learning_Level",
+              "displayName": "Learning_Level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Item_Type",
+              "displayName": "Item_Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Response_Format",
+              "displayName": "Response_Format",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reference_Answer",
+              "displayName": "Reference_Answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Gold_Label",
+              "displayName": "Gold_Label",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Gold_Source_ID",
+              "displayName": "Gold_Source_ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Response",
+              "displayName": "Without_RAG_Response",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Without_RAG_Auto_Objective_0_1",
+              "displayName": "Without_RAG_Auto_Objective_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Final_Correct_0_1",
+              "displayName": "Without_RAG_Final_Correct_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Meaning_1_5",
+              "displayName": "Without_RAG_Meaning_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Naturalness_1_5",
+              "displayName": "Without_RAG_Naturalness_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Relevance_1_5",
+              "displayName": "Without_RAG_Relevance_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Level_Appropriateness_1_5",
+              "displayName": "Without_RAG_Level_Appropriateness_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Hallucination_0_1",
+              "displayName": "Without_RAG_Hallucination_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Latency_sec",
+              "displayName": "Without_RAG_Latency_sec",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Input_Tokens",
+              "displayName": "Without_RAG_Input_Tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Without_RAG_Output_Tokens",
+              "displayName": "Without_RAG_Output_Tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Response",
+              "displayName": "With_RAG_Response",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Auto_Objective_0_1",
+              "displayName": "With_RAG_Auto_Objective_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Final_Correct_0_1",
+              "displayName": "With_RAG_Final_Correct_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Meaning_1_5",
+              "displayName": "With_RAG_Meaning_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Naturalness_1_5",
+              "displayName": "With_RAG_Naturalness_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Relevance_1_5",
+              "displayName": "With_RAG_Relevance_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Level_Appropriateness_1_5",
+              "displayName": "With_RAG_Level_Appropriateness_1_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Faithfulness_0_2",
+              "displayName": "With_RAG_Faithfulness_0_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Hallucination_0_1",
+              "displayName": "With_RAG_Hallucination_0_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Latency_sec",
+              "displayName": "With_RAG_Latency_sec",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Input_Tokens",
+              "displayName": "With_RAG_Input_Tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "With_RAG_Output_Tokens",
+              "displayName": "With_RAG_Output_Tokens",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Retrieved_ID_1",
+              "displayName": "Retrieved_ID_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Retrieved_ID_2",
+              "displayName": "Retrieved_ID_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Retrieved_ID_3",
+              "displayName": "Retrieved_ID_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Retrieved_ID_4",
+              "displayName": "Retrieved_ID_4",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Retrieved_ID_5",
+              "displayName": "Retrieved_ID_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Gold_Source_Rank",
+              "displayName": "Gold_Source_Rank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Hit_At_1",
+              "displayName": "Hit_At_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Hit_At_3",
+              "displayName": "Hit_At_3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Hit_At_5",
+              "displayName": "Hit_At_5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reciprocal_Rank",
+              "displayName": "Reciprocal_Rank",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Pairwise_Preference",
+              "displayName": "Pairwise_Preference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reviewer_1",
+              "displayName": "Reviewer_1",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reviewer_2",
+              "displayName": "Reviewer_2",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reviewer_Notes",
+              "displayName": "Reviewer_Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Paired_Outcome",
+              "displayName": "Paired_Outcome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Correctness_Change",
+              "displayName": "Correctness_Change",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Naturalness_Change",
+              "displayName": "Naturalness_Change",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Relevance_Change",
+              "displayName": "Relevance_Change",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Latency_Change_sec",
+              "displayName": "Latency_Change_sec",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Total_Token_Change",
+              "displayName": "Total_Token_Change",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "locationDefine": {
+            "values": {
+              "headerRow": 2,
+              "firstDataRow": 3
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        304,
+        208
+      ],
+      "id": "fd4949e9-0d30-4c7e-97c7-b542a8e8bad1",
+      "name": "Append or update row in sheet"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -944,
+        208
+      ],
+      "id": "ed8eb729-cfeb-4a6d-b5c1-69054d79864d",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a0e14c58-fffc-45c2-aa0b-4fb6037fd21c",
+              "name": "Prompt",
+              "value": "={{ $json.Prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "cd05da95-3798-41e2-903d-45b0c8c6f917",
+              "name": "Evaluation_ID",
+              "value": "={{ $json.Evaluation_ID }}",
+              "type": "string"
+            },
+            {
+              "id": "1ff8f09b-a0d5-4660-9c87-9c26ad4c07e4",
+              "name": "=Evaluation_Type",
+              "value": "={{ $json.Evaluation_Type }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -272,
+        80
+      ],
+      "id": "129c542e-87e8-4c72-8444-1178a6a3e44f",
+      "name": "Prepare Retrieval Query"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -496,
+        208
+      ],
+      "id": "82826ff1-efe8-472b-85b2-b5108d37dd0c",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=={{ $json.Prompt }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=={{ `You are an evaluation assistant specializing in Modern Standard Arabic, Levantine Arabic, and English.\n\nTask type:\n${$json.Evaluation_Type}\n\nAnswer the evaluation request using only your internal knowledge.\n\nOutput rules:\n- English_to_Levantine or MSA_to_Levantine: return only one natural Levantine Arabic answer.\n- Levantine_to_English: return only one English answer.\n- Levantine_to_MSA: return only one Modern Standard Arabic answer.\n- Yes_No: return only Yes or No.\n- Multiple_Choice: return only the correct answer.\n\nDo not use retrieved records or external context.\nDo not provide alternatives.\nDo not repeat the question.\nDo not explain.\nReturn exactly one final answer.` }}"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -48,
+        80
+      ],
+      "id": "e7e7a3a3-3c92-4e9e-8aca-1d39470fe465",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {
+          "maxTokens": 300,
+          "reasoningEffort": "low"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        256
+      ],
+      "id": "b087b094-ed9b-4479-84b9-8c38a00fb1a7",
+      "name": "OpenAI Chat Model"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Retrieval Query": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Prepare Retrieval Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}
